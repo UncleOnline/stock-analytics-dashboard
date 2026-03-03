@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Intelligence Dashboard</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',system-ui,sans-serif; background:#080d1a; color:#dce6f5; min-height:100vh; }
+
+/* Header */
+.header {
+  background:linear-gradient(180deg,#0d1526 0%,#0a1020 100%);
+  border-bottom:1px solid #1a2a42;
+  padding:18px 32px;
+  position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.header-left { display:flex; align-items:center; gap:14px; }
+.header-icon { width:42px; height:42px; background:linear-gradient(135deg,#1a56db,#0ea5e9); border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.header-title { font-size:18px; font-weight:700; color:#fff; }
+.header-sub { font-size:12px; color:#5a6a88; margin-top:2px; }
+.header-right { display:flex; gap:8px; align-items:center; }
+.badge { padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge-blue { background:#132240; color:#4d9ee8; border:1px solid #1e3a60; }
+.badge-green { background:#0f2518; color:#22c55e; border:1px solid #1a4028; }
+.badge-amber { background:#1a1200; color:#f59e0b; border:1px solid #3a2800; }
+.badge-live { background:#0a2010; color:#22c55e; border:1px solid #1a5030; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+
+/* Catalyst banner */
+.catalyst-banner {
+  background:linear-gradient(90deg,#0d1a0d,#0f2a10,#0d1a0d);
+  border-bottom:1px solid #1a4020;
+  padding:9px 32px;
+  display:flex; align-items:center; gap:10px;
+  font-size:12px;
+}
+.catalyst-label { background:#22c55e22; color:#22c55e; border:1px solid #22c55e44; border-radius:4px; padding:2px 8px; font-size:10px; font-weight:700; letter-spacing:.05em; }
+.catalyst-text { color:#a0d8a0; }
+.catalyst-ticker { color:#22c55e; font-weight:700; }
+.catalyst-date { color:#5a8a5a; margin-left:auto; font-size:11px; }
+
+/* Summary bar */
+.summary-bar {
+  background:#0d1526; border-bottom:1px solid #1a2a42;
+  padding:14px 32px; display:flex; gap:28px; align-items:center; flex-wrap:wrap;
+}
+.stat-item { display:flex; flex-direction:column; }
+.stat-label { font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:#5a6a88; margin-bottom:3px; }
+.stat-value { font-size:18px; font-weight:700; }
+.stat-value.green { color:#22c55e; }
+.stat-value.amber { color:#f59e0b; }
+.stat-value.blue { color:#3b82f6; }
+.stat-value.red { color:#ef4444; }
+.stat-value.neutral { color:#94a3b8; }
+.stat-divider { width:1px; height:36px; background:#1a2a42; }
+
+/* Container */
+.container { max-width:1240px; margin:0 auto; padding:28px 24px; }
+
+/* Phase header */
+.phase-header {
+  display:flex; align-items:center; gap:12px;
+  margin:36px 0 16px;
+  padding-bottom:12px;
+  border-bottom:1px solid #1a2a42;
+}
+.phase-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.phase-title { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+.phase-desc { font-size:12px; color:#5a6a88; margin-left:auto; }
+
+/* Agent cards grid */
+.cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:16px; }
+
+/* Agent card */
+.agent-card {
+  background:#0d1526; border:1px solid #1a2a42; border-radius:14px;
+  padding:20px; position:relative; overflow:hidden;
+}
+.agent-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--accent);
+}
+.card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.card-firm { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:4px; }
+.card-title { font-size:13px; font-weight:700; color:#e8f0fd; line-height:1.3; }
+.card-status { padding:3px 9px; border-radius:10px; font-size:10px; font-weight:600; flex-shrink:0; margin-left:8px; margin-top:2px; }
+.status-live { background:#0f2518; color:#22c55e; border:1px solid #1a4028; }
+
+/* Pick rows */
+.picks-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.pick-row { display:flex; align-items:center; gap:8px; padding:5px 8px; background:#090f1e; border-radius:6px; }
+.pick-ticker { font-weight:700; font-size:12px; color:#e8f0fd; min-width:52px; }
+.pick-detail { font-size:11px; color:#8899bb; flex:1; }
+.pick-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; flex-shrink:0; }
+.badge-high { background:#0f2518; color:#22c55e; }
+.badge-medium { background:#1a1000; color:#f59e0b; }
+.badge-buy { background:#0a1a2a; color:#3b82f6; }
+.badge-sell { background:#1a0a0a; color:#ef4444; }
+.badge-bull { background:#0f2518; color:#22c55e; }
+.badge-watch { background:#0f1a2a; color:#60a5fa; }
+
+/* Macro box */
+.macro-box { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+.macro-row { display:flex; align-items:center; gap:8px; padding:5px 8px; background:#090f1e; border-radius:6px; }
+.macro-icon { font-size:13px; }
+.macro-text { font-size:11px; color:#8899bb; flex:1; line-height:1.4; }
+.macro-sentiment { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; flex-shrink:0; }
+.sentiment-pos { background:#0f2518; color:#22c55e; }
+.sentiment-neg { background:#1a0a0a; color:#ef4444; }
+.sentiment-mixed { background:#1a1000; color:#f59e0b; }
+
+/* Valuation table */
+.val-table { width:100%; border-collapse:collapse; margin-bottom:10px; }
+.val-table th { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:#5a6a88; padding:4px 6px; text-align:left; }
+.val-table td { font-size:11px; padding:5px 6px; border-top:1px solid #0f1829; }
+.val-table tr:first-child td { border-top:none; }
+.upside-green { color:#22c55e; font-weight:600; }
+.upside-blue { color:#60a5fa; font-weight:600; }
+
+/* Alloc bars */
+.alloc-section { margin-bottom:10px; }
+.alloc-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+.alloc-label { font-size:11px; color:#8899bb; min-width:120px; }
+.alloc-bar-bg { flex:1; height:6px; background:#0f1829; border-radius:3px; }
+.alloc-bar { height:6px; border-radius:3px; }
+.alloc-pct { font-size:11px; font-weight:700; min-width:32px; text-align:right; }
+
+/* Risk list */
+.risk-list { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+.risk-row { display:flex; align-items:flex-start; gap:8px; padding:5px 8px; background:#090f1e; border-radius:6px; }
+.risk-level { font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; flex-shrink:0; min-width:52px; text-align:center; }
+.risk-high { background:#1a0808; color:#ef4444; }
+.risk-med { background:#1a1000; color:#f59e0b; }
+.risk-low { background:#0f2518; color:#22c55e; }
+.risk-text { font-size:11px; color:#8899bb; line-height:1.4; }
+
+/* Dividend table */
+.div-table { width:100%; border-collapse:collapse; margin-bottom:10px; }
+.div-table th { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:#5a6a88; padding:4px 6px; text-align:left; }
+.div-table td { font-size:11px; padding:5px 6px; border-top:1px solid #0f1829; }
+
+/* Card schedule / updated */
+.card-meta { display:flex; gap:12px; margin-top:10px; padding-top:10px; border-top:1px solid #0f1829; }
+.card-meta-item { font-size:10px; color:#3a4a66; }
+
+/* Watchlist */
+.watchlist { margin-top:44px; }
+.watchlist-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+
+.watchlist-table { width:100%; border-collapse:collapse; }
+.watchlist-table th {
+  font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:#5a6a88;
+  padding:8px 12px; text-align:left; background:#090f1e; border-bottom:1px solid #1a2a42;
+}
+.watchlist-table td { padding:9px 12px; border-bottom:1px solid #0f1829; vertical-align:middle; }
+.watchlist-table tr:hover td { background:#0a1020; }
+.wl-ticker { font-weight:700; font-size:13px; color:#e8f0fd; }
+.wl-name { font-size:11px; color:#5a6a88; }
+.wl-target { font-size:12px; font-weight:600; color:#22c55e; }
+.wl-upside { font-size:11px; color:#22c55e; }
+.wl-upside.neutral { color:#94a3b8; }
+.framework-badges { display:flex; flex-wrap:wrap; gap:4px; }
+.fw-badge { font-size:9px; font-weight:700; padding:2px 5px; border-radius:3px; background:#132240; color:#4d9ee8; border:1px solid #1e3a60; }
+.fw-badge.gs { background:#1a2010; color:#a3c55e; border-color:#2a4020; }
+.fw-badge.ms { background:#101828; color:#60a5fa; border-color:#1e3060; }
+.fw-badge.jpm { background:#1a1008; color:#f59e0b; border-color:#3a2800; }
+.fw-badge.ren { background:#0f1a28; color:#80deea; border-color:#1a3040; }
+.fw-badge.cit { background:#180f20; color:#ce93d8; border-color:#301840; }
+.fw-badge.blk { background:#0f2518; color:#22c55e; border-color:#1a4028; }
+.fw-badge.har { background:#201010; color:#ef9a9a; border-color:#401020; }
+.fw-badge.bain { background:#201808; color:#ffcc80; border-color:#403010; }
+.conviction-dots { display:flex; gap:3px; align-items:center; }
+.dot { width:8px; height:8px; border-radius:50%; background:#1a2a42; }
+.dot.filled { background:#22c55e; }
+.dot.half { background:#f59e0b; }
+
+/* Footer */
+.footer { text-align:center; padding:32px; color:#3a4a66; font-size:11px; border-top:1px solid #1a2a42; margin-top:48px; line-height:1.8; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">📊</div>
+    <div>
+      <div class="header-title">Investment Intelligence Dashboard</div>
+      <div class="header-sub">Jesper · Tech/AI &amp; Energy/Industrials · Growth Style</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-live">🟢 LIVE — March 2, 2026</span>
+    <span class="badge badge-blue">🤖 10 Agents Run</span>
+    <span class="badge badge-amber">⏰ Updated 08:00 AM</span>
+  </div>
+</div>
+
+<div class="catalyst-banner">
+  <span class="catalyst-label">🚨 CATALYST</span>
+  <span class="catalyst-text"><span class="catalyst-ticker">AVGO</span> (Broadcom) Earnings — March 4, 2026 · EPS est $2.02 (+26.3% YoY) · Revenue est $19.11B (+28.1% YoY)</span>
+  <span class="catalyst-date">⚡ 2 days away</span>
+</div>
+
+<div class="summary-bar">
+  <div class="stat-item">
+    <div class="stat-label">Macro Rating</div>
+    <div class="stat-value neutral">NEUTRAL</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-label">Risk Level</div>
+    <div class="stat-value amber">ELEVATED</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-label">High-Conviction Picks</div>
+    <div class="stat-value green">14</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-label">Market Momentum</div>
+    <div class="stat-value green">BULL</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-label">S&amp;P Target</div>
+    <div class="stat-value blue">7,600</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-label">Expected Return</div>
+    <div class="stat-value green">+11%</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-label">Fed Pivot</div>
+    <div class="stat-value" style="color:#dce6f5;font-size:14px;">June 2026</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PHASE 1: DISCOVER -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="phase-header">
+    <div class="phase-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e66;"></div>
+    <div class="phase-title" style="color:#22c55e;">🔍 Phase 1 — Discover</div>
+    <div class="phase-desc">Screen the market · Macro context · Competitive moats</div>
+  </div>
+  <div class="cards-grid">
+
+    <!-- Goldman Sachs -->
+    <div class="agent-card" style="--accent:#22c55e">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">Goldman Sachs · Senior Equity Analyst</div>
+          <div class="card-title">The Goldman Sachs Stock Screener</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <div class="picks-list">
+        <div class="pick-row"><span class="pick-ticker">NVDA</span><span class="pick-detail">AI Chip dominance, DC revenue +75% YoY</span><span class="pick-badge badge-high">High</span></div>
+        <div class="pick-row"><span class="pick-ticker">MU</span><span class="pick-detail">HBM memory supercycle for AI training</span><span class="pick-badge badge-high">High</span></div>
+        <div class="pick-row"><span class="pick-ticker">AVGO</span><span class="pick-detail">Custom silicon + networking, AVGO Mar4</span><span class="pick-badge badge-high">High</span></div>
+        <div class="pick-row"><span class="pick-ticker">GOOGL</span><span class="pick-detail">AI monetization, cloud reacceleration</span><span class="pick-badge badge-high">High</span></div>
+        <div class="pick-row"><span class="pick-ticker">GEV</span><span class="pick-detail">Gas turbines, $150B backlog sold to 2028</span><span class="pick-badge badge-high">High</span></div>
+        <div class="pick-row"><span class="pick-ticker">VLO</span><span class="pick-detail">Refinery margin resilience, energy demand</span><span class="pick-badge badge-medium">Medium</span></div>
+        <div class="pick-row"><span class="pick-ticker">PLUG</span><span class="pick-detail">Green hydrogen, IRA tailwinds</span><span class="pick-badge badge-medium">Medium</span></div>
+        <div class="pick-row"><span class="pick-ticker">CVE</span><span class="pick-detail">Oil sands, capital return program</span><span class="pick-badge badge-medium">Medium</span></div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Daily 7:00 AM</span>
+        <span class="card-meta-item">🌐 Global growth: 2.8%</span>
+      </div>
+    </div>
+
+    <!-- McKinsey Macro -->
+    <div class="agent-card" style="--accent:#22c55e">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">McKinsey &amp; Company · Senior Partner</div>
+          <div class="card-title">The McKinsey Macro Economic Impact Report</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <div class="macro-box">
+        <div class="macro-row">
+          <span class="macro-icon">🤖</span>
+          <span class="macro-text">AI Productivity Validation — cloud capex $470B+, but ROI proof still pending</span>
+          <span class="macro-sentiment sentiment-mixed">Mixed</span>
+        </div>
+        <div class="macro-row">
+          <span class="macro-icon">⚔️</span>
+          <span class="macro-text">Geopolitical Escalation — trade fragmentation, tariff risk accelerating</span>
+          <span class="macro-sentiment sentiment-neg">Negative</span>
+        </div>
+        <div class="macro-row">
+          <span class="macro-icon">🏦</span>
+          <span class="macro-text">Fed Pivot June 2026 — rate cuts expected, bond yields peak near-term</span>
+          <span class="macro-sentiment sentiment-pos">Positive</span>
+        </div>
+      </div>
+      <div class="picks-list">
+        <div class="pick-row"><span class="pick-ticker">Tech/AI</span><span class="pick-detail">−3% YTD · Rotation risk from mega-cap</span><span class="pick-badge badge-medium">Neutral</span></div>
+        <div class="pick-row"><span class="pick-ticker">Energy</span><span class="pick-detail">+21.5% YTD · Structural demand tailwind</span><span class="pick-badge badge-high">Caution</span></div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Daily 7:05 AM</span>
+        <span class="card-meta-item">⚡ Watch: Q1 2026 earnings · Fed Chair transition May 2026</span>
+      </div>
+    </div>
+
+    <!-- Bain Competitive -->
+    <div class="agent-card" style="--accent:#22c55e">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">Bain &amp; Company · Managing Partner</div>
+          <div class="card-title">The Bain Competitive Analysis</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <div class="picks-list">
+        <div class="pick-row"><span class="pick-ticker">NVDA</span><span class="pick-detail">CUDA ecosystem lock-in, widening moat</span><span class="pick-badge badge-high">Widening</span></div>
+        <div class="pick-row"><span class="pick-ticker">MSFT</span><span class="pick-detail">Azure + Copilot, enterprise AI moat</span><span class="pick-badge badge-high">Widening</span></div>
+        <div class="pick-row"><span class="pick-ticker">TSM</span><span class="pick-detail">Advanced packaging monopoly (CoWoS)</span><span class="pick-badge badge-high">Widening</span></div>
+        <div class="pick-row"><span class="pick-ticker">GEV</span><span class="pick-detail">Power infrastructure backlog to 2028</span><span class="pick-badge badge-medium">Stable</span></div>
+        <div class="pick-row"><span class="pick-ticker">XOM</span><span class="pick-detail">Low-cost producer, Permian scale</span><span class="pick-badge badge-medium">Widening</span></div>
+      </div>
+      <div class="macro-box">
+        <div class="macro-row">
+          <span class="macro-icon">⚠️</span>
+          <span class="macro-text">Watch: AMD-Meta GPU partnership, China manufacturing capability ramp, CRM −29%, WDAY −34% (SaaS commoditization)</span>
+          <span class="macro-sentiment sentiment-neg">Threat</span>
+        </div>
+        <div class="macro-row">
+          <span class="macro-icon">💡</span>
+          <span class="macro-text">Opportunity: WDC +75% (NAND recovery), SNDK +155%, CAT +32% YTD (reshoring)</span>
+          <span class="macro-sentiment sentiment-pos">Signal</span>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Monday 7:30 AM</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PHASE 2: ANALYZE -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="phase-header">
+    <div class="phase-dot" style="background:#3b82f6;box-shadow:0 0 8px #3b82f666;"></div>
+    <div class="phase-title" style="color:#3b82f6;">🔬 Phase 2 — Analyze</div>
+    <div class="phase-desc">Valuation · Earnings · Patterns · Technical levels</div>
+  </div>
+  <div class="cards-grid">
+
+    <!-- Morgan Stanley DCF -->
+    <div class="agent-card" style="--accent:#3b82f6">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">Morgan Stanley · Managing Director</div>
+          <div class="card-title">The Morgan Stanley DCF Valuation</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <table class="val-table">
+        <tr><th>Ticker</th><th>Current</th><th>MS Target</th><th>Upside</th></tr>
+        <tr><td><strong>MU</strong></td><td>~$300</td><td class="wl-target">$450</td><td class="upside-green">+50%</td></tr>
+        <tr><td><strong>GEV</strong></td><td>~$671</td><td class="wl-target">$1,000</td><td class="upside-green">+49%</td></tr>
+        <tr><td><strong>DELL</strong></td><td>~$112</td><td class="wl-target">$144</td><td class="upside-green">+29%</td></tr>
+        <tr><td><strong>META</strong></td><td>~$480</td><td class="wl-target">$605</td><td class="upside-green">+26%</td></tr>
+        <tr><td><strong>ANET</strong></td><td>~$141</td><td class="wl-target">$175</td><td class="upside-green">+24%</td></tr>
+        <tr><td><strong>EOG</strong></td><td>~$117</td><td class="wl-target">$139</td><td class="upside-green">+19%</td></tr>
+      </table>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Wednesday 7:00 AM</span>
+        <span class="card-meta-item">📐 DCF + Scenario Analysis</span>
+      </div>
+    </div>
+
+    <!-- JPMorgan Earnings -->
+    <div class="agent-card" style="--accent:#3b82f6">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">JPMorgan · Chief Market Strategist</div>
+          <div class="card-title">The JPMorgan Earnings Analyzer</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <div class="picks-list">
+        <div class="pick-row" style="border:1px solid #22c55e44;background:#0a1a0a;">
+          <span class="pick-ticker" style="color:#22c55e;">AVGO</span>
+          <span class="pick-detail">Mar 4 · EPS $2.02E (+26%) · Rev $19.1BE (+28%)</span>
+          <span class="pick-badge" style="background:#0f2518;color:#22c55e;">🔴 LIVE</span>
+        </div>
+        <div class="pick-row"><span class="pick-ticker">NVDA</span><span class="pick-detail">Recent beat — DC +75% YoY, guidance strong</span><span class="pick-badge badge-high">Beat</span></div>
+        <div class="pick-row"><span class="pick-ticker">UUUU</span><span class="pick-detail">Uranium breakout year — beat consensus</span><span class="pick-badge badge-high">Beat</span></div>
+      </div>
+      <div class="macro-box">
+        <div class="macro-row">
+          <span class="macro-icon">📊</span>
+          <span class="macro-text">Tech sector blended earnings growth: 33.4% · Hyperscaler capex: $470B+ · Mag-7 beat rate: 86%</span>
+          <span class="macro-sentiment sentiment-pos">Strong</span>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Wednesday 7:15 AM</span>
+        <span class="card-meta-item">⚡ AVGO March 4 = key event</span>
+      </div>
+    </div>
+
+    <!-- Renaissance Patterns -->
+    <div class="agent-card" style="--accent:#06b6d4">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">Renaissance Technologies · Quant Analyst</div>
+          <div class="card-title">The Renaissance Pattern Finder</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <div class="picks-list">
+        <div class="pick-row"><span class="pick-ticker">MU</span><span class="pick-detail">12M momentum +342% · Strong breakout</span><span class="pick-badge badge-bull">Strong</span></div>
+        <div class="pick-row"><span class="pick-ticker">WDC</span><span class="pick-detail">12M momentum +465% · NAND supercycle</span><span class="pick-badge badge-bull">Strong</span></div>
+        <div class="pick-row"><span class="pick-ticker">NVDA</span><span class="pick-detail">Persistent momentum, institutional flow</span><span class="pick-badge badge-bull">Strong</span></div>
+        <div class="pick-row"><span class="pick-ticker">TSM</span><span class="pick-detail">Volume-confirmed uptrend, CoWoS demand</span><span class="pick-badge badge-bull">Strong</span></div>
+        <div class="pick-row"><span class="pick-ticker">AVGO</span><span class="pick-detail">Pre-earnings momentum building</span><span class="pick-badge badge-watch">Moderate</span></div>
+        <div class="pick-row"><span class="pick-ticker">AROC</span><span class="pick-detail">Compression services, pipeline growth</span><span class="pick-badge badge-watch">Moderate</span></div>
+      </div>
+      <div class="macro-box">
+        <div class="macro-row">
+          <span class="macro-icon">🔄</span>
+          <span class="macro-text">Mean reversion candidates: GOOGL, AMAT, AMD (oversold relative to sector)</span>
+          <span class="macro-sentiment sentiment-mixed">Revert</span>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Thursday 7:00 AM</span>
+        <span class="card-meta-item">📈 Market: BULL with rotation · Energy +19.9% (3M)</span>
+      </div>
+    </div>
+
+    <!-- Citadel Technical -->
+    <div class="agent-card" style="--accent:#a855f7">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">Citadel · Equity Trader</div>
+          <div class="card-title">The Citadel Technical Analysis</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <div class="picks-list">
+        <div class="pick-row"><span class="pick-ticker">NVDA</span><span class="pick-detail">Breakout watch 195→203→212 · Heavy vol</span><span class="pick-badge badge-buy">Setup</span></div>
+        <div class="pick-row"><span class="pick-ticker">XLE</span><span class="pick-detail">ATH $108.42 · Continuation, 10/2 MAs Buy</span><span class="pick-badge badge-buy">Strong Buy</span></div>
+        <div class="pick-row"><span class="pick-ticker">XLB</span><span class="pick-detail">5-year breakout level · Reshoring signal</span><span class="pick-badge badge-buy">Breakout</span></div>
+        <div class="pick-row"><span class="pick-ticker">PLTR</span><span class="pick-detail">Oversold reversal setup — watch bounce</span><span class="pick-badge badge-watch">Reversal</span></div>
+        <div class="pick-row"><span class="pick-ticker">INTU</span><span class="pick-detail">Oversold — AI monetization catalyst</span><span class="pick-badge badge-watch">Reversal</span></div>
+        <div class="pick-row"><span class="pick-ticker">QQQ</span><span class="pick-detail">Strong Sell: 10 Sell / 2 Buy MAs · Support 600</span><span class="pick-badge badge-sell">Strong Sell</span></div>
+      </div>
+      <div class="macro-box">
+        <div class="macro-row">
+          <span class="macro-icon">📉</span>
+          <span class="macro-text">SMH overbought (RSI 70–80) — wait for pullback before adding semiconductor exposure</span>
+          <span class="macro-sentiment sentiment-neg">Caution</span>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Thursday 7:15 AM</span>
+        <span class="card-meta-item">🎯 XLE ATH · SMH overbought</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PHASE 3: BUILD & PROTECT -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="phase-header">
+    <div class="phase-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b66;"></div>
+    <div class="phase-title" style="color:#f59e0b;">🛡️ Phase 3 — Build &amp; Protect</div>
+    <div class="phase-desc">Portfolio construction · Risk management · Long-term compounding</div>
+  </div>
+  <div class="cards-grid">
+
+    <!-- BlackRock Portfolio -->
+    <div class="agent-card" style="--accent:#f59e0b">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">BlackRock · Portfolio Manager</div>
+          <div class="card-title">The BlackRock Portfolio Builder</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <div class="alloc-section">
+        <div class="alloc-row">
+          <span class="alloc-label">Tech / AI</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar" style="width:55%;background:#3b82f6;"></div></div>
+          <span class="alloc-pct" style="color:#3b82f6;">55%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-label">Energy / Industrials</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar" style="width:35%;background:#f59e0b;"></div></div>
+          <span class="alloc-pct" style="color:#f59e0b;">35%</span>
+        </div>
+        <div class="alloc-row">
+          <span class="alloc-label">Cash (Dry Powder)</span>
+          <div class="alloc-bar-bg"><div class="alloc-bar" style="width:10%;background:#6b7280;"></div></div>
+          <span class="alloc-pct" style="color:#6b7280;">10%</span>
+        </div>
+      </div>
+      <div class="picks-list">
+        <div class="pick-row"><span class="pick-ticker">NVDA</span><span class="pick-detail">Core holding, 12–15% allocation</span><span class="pick-badge badge-high">Core</span></div>
+        <div class="pick-row"><span class="pick-ticker">MSFT</span><span class="pick-detail">Core holding, 10–12% allocation</span><span class="pick-badge badge-high">Core</span></div>
+        <div class="pick-row"><span class="pick-ticker">NEE</span><span class="pick-detail">Core holding, 10–12% (clean energy)</span><span class="pick-badge badge-high">Core</span></div>
+        <div class="pick-row"><span class="pick-ticker">MU / XLE</span><span class="pick-detail">Satellite: MU 3–5%, XLE 5–7%</span><span class="pick-badge badge-watch">Satellite</span></div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Monday 7:45 AM</span>
+      </div>
+    </div>
+
+    <!-- Bridgewater Risk -->
+    <div class="agent-card" style="--accent:#ef4444">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">Bridgewater Associates · Risk Manager</div>
+          <div class="card-title">The Bridgewater Risk Assessment</div>
+        </div>
+        <span class="card-status" style="background:#1a0808;color:#ef4444;border:1px solid #4a1010;">⚠️ ELEVATED</span>
+      </div>
+      <div class="risk-list">
+        <div class="risk-row">
+          <span class="risk-level risk-high">HIGH</span>
+          <span class="risk-text">Geoeconomic Confrontation — US-China trade fragmentation, tariff escalation hitting semiconductor supply chains</span>
+        </div>
+        <div class="risk-row">
+          <span class="risk-level risk-high">HIGH</span>
+          <span class="risk-text">Valuation / Earnings Compression — Tech −3% YTD despite strong earnings; multiple compression risk if AI ROI disappoints</span>
+        </div>
+        <div class="risk-row">
+          <span class="risk-level risk-med">MED-HI</span>
+          <span class="risk-text">Fed Uncertainty — Chair transition May 2026 creates policy path ambiguity; June cut not fully priced</span>
+        </div>
+      </div>
+      <div class="macro-box" style="margin-top:8px;">
+        <div class="macro-row">
+          <span class="macro-icon">🦢</span>
+          <span class="macro-text">Black swans: US-Iran Hormuz closure · Major AI earnings miss (25%+ correction) · Unexpected Fed tightening</span>
+          <span class="macro-sentiment sentiment-neg">Monitor</span>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 Monday 8:00 AM</span>
+        <span class="card-meta-item">🛡 Recommendation: Maintain 10% cash buffer</span>
+      </div>
+    </div>
+
+    <!-- Harvard Dividend -->
+    <div class="agent-card" style="--accent:#ec4899">
+      <div class="card-header">
+        <div>
+          <div class="card-firm">Harvard Management Company · CIO</div>
+          <div class="card-title">The Harvard Endowment Dividend Strategy</div>
+        </div>
+        <span class="card-status status-live">✅ LIVE</span>
+      </div>
+      <table class="div-table">
+        <tr><th>Ticker</th><th>Yield</th><th>Streak</th><th>Growth</th></tr>
+        <tr><td><strong>ENB</strong></td><td style="color:#22c55e;">5.6%</td><td>31 years</td><td style="color:#60a5fa;">+6%/yr</td></tr>
+        <tr><td><strong>EPD</strong></td><td style="color:#22c55e;">6.2%</td><td>27 years</td><td style="color:#60a5fa;">+5%/yr</td></tr>
+        <tr><td><strong>ET</strong></td><td style="color:#22c55e;">7.2%</td><td>—</td><td style="color:#f59e0b;">Growth</td></tr>
+        <tr><td><strong>NEE</strong></td><td style="color:#f59e0b;">2.5%</td><td>30 years</td><td style="color:#22c55e;">+10%/yr</td></tr>
+        <tr><td><strong>AVGO</strong></td><td style="color:#94a3b8;">0.77%</td><td>—</td><td style="color:#22c55e;">+12%/yr</td></tr>
+        <tr><td><strong>MSFT</strong></td><td style="color:#94a3b8;">0.65%</td><td>—</td><td style="color:#22c55e;">+10%/yr</td></tr>
+      </table>
+      <div class="card-meta">
+        <span class="card-meta-item">📅 1st of month 7:00 AM</span>
+        <span class="card-meta-item">🎓 Focus: dividend growth rate over yield</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- AGGREGATED WATCHLIST -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="watchlist">
+    <div class="watchlist-header">
+      <div class="phase-dot" style="background:#a855f7;box-shadow:0 0 8px #a855f766;"></div>
+      <div class="phase-title" style="color:#a855f7;font-size:14px;">⭐ Cross-Framework Watchlist</div>
+      <div class="phase-desc" style="margin-left:auto;">13 tickers flagged across multiple frameworks · Sorted by conviction</div>
+    </div>
+    <table class="watchlist-table">
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>MS Target / Upside</th>
+          <th>Frameworks</th>
+          <th>Key Thesis</th>
+          <th>Conviction</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="wl-ticker">NVDA</div><div class="wl-name">NVIDIA</div></td>
+          <td><div class="wl-target">—</div><div class="wl-upside neutral">Multiple</div></td>
+          <td><div class="framework-badges"><span class="fw-badge gs">GS</span><span class="fw-badge bain">Bain</span><span class="fw-badge jpm">JPM</span><span class="fw-badge ren">Ren</span><span class="fw-badge cit">Cit</span><span class="fw-badge blk">BLK</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">AI chip dominance, CUDA moat, DC +75% YoY, breakout watch 195→212</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">MU</div><div class="wl-name">Micron</div></td>
+          <td><div class="wl-target">$450</div><div class="wl-upside">+50%</div></td>
+          <td><div class="framework-badges"><span class="fw-badge gs">GS</span><span class="fw-badge ms">MS</span><span class="fw-badge ren">Ren</span><span class="fw-badge blk">BLK</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">HBM supercycle, 12M momentum +342%, $450 MS target</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">AVGO</div><div class="wl-name">Broadcom</div></td>
+          <td><div class="wl-target">—</div><div class="wl-upside" style="color:#f59e0b;">⚡ Mar 4</div></td>
+          <td><div class="framework-badges"><span class="fw-badge gs">GS</span><span class="fw-badge jpm">JPM</span><span class="fw-badge ren">Ren</span><span class="fw-badge har">Har</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">Earnings March 4 — EPS $2.02E +26%, custom silicon, 0.77% div +12%</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">GEV</div><div class="wl-name">GE Vernova</div></td>
+          <td><div class="wl-target">$1,000</div><div class="wl-upside">+49%</div></td>
+          <td><div class="framework-badges"><span class="fw-badge gs">GS</span><span class="fw-badge ms">MS</span><span class="fw-badge bain">Bain</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">$150B backlog sold to 2028, AI data center power demand, $1000 MS target</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">MSFT</div><div class="wl-name">Microsoft</div></td>
+          <td><div class="wl-target">—</div><div class="wl-upside neutral">Core</div></td>
+          <td><div class="framework-badges"><span class="fw-badge bain">Bain</span><span class="fw-badge blk">BLK</span><span class="fw-badge har">Har</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">Azure + Copilot moat widening, core 10–12% alloc, 10% div growth</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">TSM</div><div class="wl-name">TSMC</div></td>
+          <td><div class="wl-target">—</div><div class="wl-upside neutral">Moat</div></td>
+          <td><div class="framework-badges"><span class="fw-badge bain">Bain</span><span class="fw-badge ren">Ren</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">Advanced packaging monopoly (CoWoS), volume-confirmed uptrend</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">META</div><div class="wl-name">Meta Platforms</div></td>
+          <td><div class="wl-target">$605</div><div class="wl-upside">+26%</div></td>
+          <td><div class="framework-badges"><span class="fw-badge gs">GS</span><span class="fw-badge ms">MS</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">AI ad monetization, $605 MS target, Mag-7 beat rate 86%</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">NEE</div><div class="wl-name">NextEra Energy</div></td>
+          <td><div class="wl-target">—</div><div class="wl-upside neutral">Core</div></td>
+          <td><div class="framework-badges"><span class="fw-badge blk">BLK</span><span class="fw-badge har">Har</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">Clean energy leader, 30-yr div streak, 10%/yr growth, core 10–12% alloc</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">WDC</div><div class="wl-name">Western Digital</div></td>
+          <td><div class="wl-target">—</div><div class="wl-upside">+75%</div></td>
+          <td><div class="framework-badges"><span class="fw-badge bain">Bain</span><span class="fw-badge ren">Ren</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">12M momentum +465%, NAND supercycle recovery, storage AI demand</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">XLE</div><div class="wl-name">Energy ETF</div></td>
+          <td><div class="wl-target">ATH</div><div class="wl-upside">$108.42</div></td>
+          <td><div class="framework-badges"><span class="fw-badge ms">MS</span><span class="fw-badge cit">Cit</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">All-time high, 10 Buy MAs, continuation setup, energy +21.5% YTD</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">ENB</div><div class="wl-name">Enbridge</div></td>
+          <td><div class="wl-target">5.6%</div><div class="wl-upside neutral">Yield</div></td>
+          <td><div class="framework-badges"><span class="fw-badge har">Har</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">5.6% yield, 31-yr streak, pipeline compounding, +6%/yr growth</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div><div class="dot"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">EOG</div><div class="wl-name">EOG Resources</div></td>
+          <td><div class="wl-target">$139</div><div class="wl-upside">+19%</div></td>
+          <td><div class="framework-badges"><span class="fw-badge ms">MS</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">$139 MS target (+19%), low-cost oil producer, Permian efficiency</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div><div class="dot"></div></div></td>
+        </tr>
+        <tr>
+          <td><div class="wl-ticker">ANET</div><div class="wl-name">Arista Networks</div></td>
+          <td><div class="wl-target">$175</div><div class="wl-upside">+24%</div></td>
+          <td><div class="framework-badges"><span class="fw-badge ms">MS</span></div></td>
+          <td style="font-size:11px;color:#8899bb;">$175 MS target (+24%), AI networking infrastructure, hyperscaler demand</td>
+          <td><div class="conviction-dots"><div class="dot filled"></div><div class="dot filled"></div><div class="dot half"></div><div class="dot"></div><div class="dot"></div></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="footer">
+  Investment Intelligence Dashboard · Live Data · March 2, 2026 · Jesper · Tech/AI &amp; Energy/Industrials · Growth Style<br>
+  Goldman Sachs &amp; McKinsey: Daily 7:00 AM · Bain, BlackRock, Bridgewater: Monday · Morgan Stanley &amp; JPMorgan: Wednesday · Renaissance &amp; Citadel: Thursday · Harvard: 1st of month<br>
+  <span style="color:#1e2d4a;margin-top:4px;display:block;">⚠️ This dashboard is for informational purposes only. Not financial advice. Past performance does not guarantee future results.</span>
+</div>
+
+</body>
+</html>
